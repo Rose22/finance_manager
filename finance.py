@@ -78,6 +78,14 @@ class financialManager:
 		print "Resulting Budget: %s%.2f" % (currency, self.getBudget())
 		print "Payments so far: %s%.2f" % (currency, self.getPaymentsMoney("payments"))
 		print "Money left: %s%.2f" % (currency, self.calculateMoneyLeft())
+	def printCalculatedMonthStart(self):
+		# By adding the leftover money from the previous month to our monthly income, we should get the exact same amount as what's in the bank account itself.
+		# If it is not, then it can be corrected using either setIncome() or setLeftovers(), depending on which value is out-of-sync.
+		print "Total money at start of month: %s%.2f" % (currency, (self.getIncome() + self.getLeftovers()))
+		print
+		print "Should be the same as on your bank account. If not, it's out of sync, and either the income for this month is incorrect or the leftover amount of money is incorrect."
+		print "Check leftovers by calculating <current amount of money on bank> - <income>."
+		print "Correct by using setincome and setleftovers."
 
 	def askForIncome(self):
 		"""Run a prompt that allows the user to set their income.""" 
@@ -117,6 +125,8 @@ class financialManager:
 
 		print "Stored leftover money into leftovers and emptied payment list."
 		print "Moved on to next month"
+
+		self.printCalculatedMonthStart()
 	def printForesight(self):
 		print "Predicted amount of money next month: %s%.2f" % (currency, self.calculateMoneyLeft()+self.getPureBudget())
 		
@@ -245,7 +255,7 @@ if __name__ == "__main__":
 		print "Financial Manager by Rose"
 		print "Type 'help' for help."
 		print
-		print "Quick reminder: expenses, payments, total, budget, details, nextmonth, foresight, reset, exit"
+		print "Quick reminder: expenses, payments, total, budget, details, nextmonth, showstart, foresight, reset, exit"
 		print
 
 	finman = financialManager()
@@ -301,6 +311,8 @@ if __name__ == "__main__":
 			finman.printPayments("payments")
 		elif cmd == "nextmonth":
 			finman.nextMonth()
+		elif cmd == "showstart":
+			finman.printCalculatedMonthStart()
 		elif cmd == "foresight":
 			finman.printForesight()
 		elif cmd == "reset":
