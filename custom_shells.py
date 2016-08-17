@@ -8,7 +8,9 @@ class PaymentsShell(GenericShell):
 
     def __init__(self, payments_list):
         # For now, simple singularization of a plural word. TODO: Make this more sophisticated
-        self.payment_type  = payments_list.name[:-1]
+        self.payment_type  = payments_list.name
+        if self.payment_type != "income":
+            self.payment_type = self.payment_type[:-1]
 
         self.payments_list = payments_list
 
