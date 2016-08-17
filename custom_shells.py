@@ -99,6 +99,8 @@ class PaymentsShell(GenericShell):
 
     def cmd_move_payment(self):
         index = self.prompt_for_index()
+        if not index:
+            return False
 
         new_index = self.input_type("int", "Move it to which position? (leave empty to leave unchanged)>")
 
@@ -127,6 +129,8 @@ class PaymentsShell(GenericShell):
 
     def cmd_delete_payment(self):
         index = self.prompt_for_index()
+        if not index:
+            return False
 
         if not self.payments_list.exists(index):
             print "That item did not exist!"
