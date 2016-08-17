@@ -173,7 +173,7 @@ class MainShell(GenericShell):
             'sl':                   self.cmd_set_leftovers,
 
             'payments':             self.cmd_manage_payments,
-            'p':                    self.cmd_manage_expenses,
+            'p':                    self.cmd_manage_payments,
 
             '+payments':            self.cmd_manage_plus_payments,
             '+p':                   self.cmd_manage_plus_payments,
