@@ -1,11 +1,8 @@
+import config
 import os
-import imp
 import pickle
 
-imp.load_source("config", "finance.conf")
-import config
-
-class PaymentsList(object):
+class PaymentList(object):
     def __init__(self, name = "payment"):
         self.name     = name
         self.payments = []
@@ -14,6 +11,8 @@ class PaymentsList(object):
         return self.payments
 
     def get_total(self):
+        """Get the total sum of money from all items in this list"""
+
         price = 0.0;
         for payment in self.payments:
             price += payment['price']
@@ -21,12 +20,16 @@ class PaymentsList(object):
         return price
 
     def exists(self, index):
+        """Check whether the given index exists in the list"""
+
         if (index > (len(self.payments)-1)):
             return False
 
         return True
 
     def add(self, price, category, name, day):
+        """Add a payment"""
+
         self.payments.append({
             'price':    price,
             'category': category,
@@ -36,6 +39,8 @@ class PaymentsList(object):
 
         return True
     def edit(self, index, price, category, name, day):
+        """Edit a payment by index"""
+
         if (index > len(self.payments)):
             return False
 
@@ -48,6 +53,8 @@ class PaymentsList(object):
 
         return True
     def delete(self, index):
+        """Delete a payment from the list by index"""
+
         if (index > len(self.payments)):
             return False
 
@@ -56,17 +63,23 @@ class PaymentsList(object):
         return True
 
     def display(self, key_name = "", key_query = ""):
+        """Displays a formatted list of payments, and allows you to search any of the keys by a value (key_query)"""
+
         output = ""
 
         for index, payment in enumerate(self.payments):
+            # Search
             if key_name:
+                # Exact search for numbers
                 if key_query.isdigit():
                     if key_query != str(payment[key_name]):
                         continue
+                # Substring search for strings
                 else:
                     if str(key_query).lower() not in str(payment[key_name]).lower():
                         continue
 
+            # Formatted list item
             output += "{0:0>3d} | day {1:0>2d} | {2:<15} | {3:<40} | {4}{5:>05.2f}\n".format(index, payment['day'], payment['category'], payment['name'][0:40], config.currency, payment['price'])
 
         if not self.payments:
@@ -78,19 +91,21 @@ class PaymentsList(object):
         return output
 
     def __str__(self):
+        """String representation of the PaymentList. Simply calls self.display()."""
+
         return self.display()
 
 
 class FinanceData(object):
-    # TODO: Add the ability to create a "payment" that adds price instead of subtracting
+    """This class does the calculations for the money management part of the program"""
 
     def __init__(self, path):
         self.data = {
             "income":	0,
-            "expenses":	 PaymentsList('expenses'),
-            "income":    PaymentsList('income'),
-            "payments":	 PaymentsList('payments'),
-            "+payments": PaymentsList('+payments'),
+            "expenses":	 PaymentList('expenses'),
+            "income":    PaymentList('income'),
+            "payments":	 PaymentList('payments'),
+            "+payments": PaymentList('+payments'),
             "leftover_prevmonth": 0
         }
 
@@ -103,9 +118,13 @@ class FinanceData(object):
                 f.write(pickle.dumps(self.data))
 
     def save(self):
+        """Saves to disk"""
+
         pickle.dump(self.data, open(self.save_path, "wb"))
 
     def set_leftovers(self, leftovers):
+        """Sets the amount of money left over (not spent) from the previous month"""
+
         self.data['leftover_prevmonth'] = leftovers
         self.save()
     def get_leftovers(self):
@@ -122,12 +141,13 @@ class FinanceData(object):
 
         return (self.get_payments_total("income")+self.data['leftover_prevmonth']+self.get_payments_total("+payments"))-self.get_payments_total("expenses")
 
-    def get_payments(self, type_of_payment):
+    def get_payments(self, type_of_payment = "payment"):
+        """Returns the PaymentList of the specified type"""
         if self.data[type_of_payment]:
             return self.data[type_of_payment]
 
-    def get_payments_total(self, type_of_payment = ""):
-        """Returns the total amount of money spent this month."""
+    def get_payments_total(self, type_of_payment = "payment"):
+        """Returns the total sum of a PaymentList."""
 
         if self.data[type_of_payment]:
             return self.data[type_of_payment].get_total()
@@ -138,10 +158,13 @@ class FinanceData(object):
         return self.get_budget()-self.get_payments_total("payments")
 
     def get_foresight(self):
+        """Calculates the amount of money you would have if you were to spend nothing and move onto the next month"""
+
         return self.get_money_left()+self.get_pure_budget()
 
     def next_month(self):
         """Stores the money still left over from this month into the previous month leftovers, and then resets payments."""
 
         self.data['leftover_prevmonth'] = self.get_money_left()
-        self.data['payments'] = PaymentsList("payments")
+        self.data['payments']  = PaymentList("payments")
+        self.data['+payments'] = PaymentList("+payments")

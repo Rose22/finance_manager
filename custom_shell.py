@@ -1,3 +1,4 @@
+import config
 import sys
 
 class BaseShell(object):

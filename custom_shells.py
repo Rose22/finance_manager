@@ -1,12 +1,8 @@
-import sys
-import imp
+import config
 from custom_shell import GenericShell
 
-imp.load_source("config", "finance.conf")
-import config
-
 class PaymentsShell(GenericShell):
-    """A shell for the PaymentsList type"""
+    """A shell for the PaymentList type"""
 
     prompt = "Do what? (add, edit, move, delete, search, clear, back)>"
 
