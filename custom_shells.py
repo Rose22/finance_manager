@@ -7,7 +7,9 @@ class PaymentsShell(GenericShell):
     prompt = "Do what? (add, edit, move, delete, search, clear, back)>"
 
     def __init__(self, payments_list):
-        self.payment_type  = payments_list.name
+        # For now, simple singularization of a plural word. TODO: Make this more sophisticated
+        self.payment_type  = payments_list.name[:-1]
+
         self.payments_list = payments_list
 
         self.cmd_associations = {
