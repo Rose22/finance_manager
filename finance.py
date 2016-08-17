@@ -6,6 +6,11 @@
 
 import os
 
+try:
+    import readline
+except ImportError:
+    pass
+
 from custom_types import FinanceData
 from custom_shells import MainShell
 

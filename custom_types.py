@@ -5,7 +5,7 @@ import pickle
 imp.load_source("config", "finance.conf")
 import config
 
-class PaymentsList():
+class PaymentsList(object):
     def __init__(self, name = "payment"):
         self.name     = name
         self.payments = []
@@ -56,11 +56,9 @@ class PaymentsList():
         return True
 
     def display(self, key_name = "", key_query = ""):
-        i = 0
-
         output = ""
 
-        for payment in self.payments:
+        for index, payment in enumerate(self.payments):
             if key_name:
                 if key_query.isdigit():
                     if key_query != str(payment[key_name]):
@@ -69,9 +67,7 @@ class PaymentsList():
                     if str(key_query).lower() not in str(payment[key_name]).lower():
                         continue
 
-            output += "{0:0>3d} | day {1:0>2d} | {2:<15} | {3:<40} | {4}{5:>05.2f}\n".format(i, payment['day'], payment['category'], payment['name'][0:40], config.currency, payment['price'])
-
-            i = i+1
+            output += "{0:0>3d} | day {1:0>2d} | {2:<15} | {3:<40} | {4}{5:>05.2f}\n".format(index, payment['day'], payment['category'], payment['name'][0:40], config.currency, payment['price'])
 
         if not self.payments:
             output += "This list doesn't have anything in it yet.\n"
@@ -85,7 +81,7 @@ class PaymentsList():
         return self.display()
 
 
-class FinanceData:
+class FinanceData(object):
     # TODO: Add the ability to create a "payment" that adds price instead of subtracting
 
     def __init__(self, path):
@@ -149,4 +145,3 @@ class FinanceData:
 
         self.data['leftover_prevmonth'] = self.get_money_left()
         self.data['payments'] = PaymentsList("payments")
-        self.save()

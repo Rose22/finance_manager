@@ -1,84 +1,63 @@
 import sys
 import imp
-from custom_shell import BaseShell, GenericShell
+from custom_shell import GenericShell
 
 imp.load_source("config", "finance.conf")
 import config
 
-class PaymentsShell(BaseShell):
+class PaymentsShell(GenericShell):
+    """A shell for the PaymentsList type"""
+
+    prompt = "Do what? (add, edit, move, delete, search, clear, back)>"
+
     def __init__(self, payments_list):
         self.payment_type  = payments_list.name
         self.payments_list = payments_list
 
-    def display_list(self):
-        print self.payments_list
+        self.cmd_associations = {
+            'add':          self.cmd_add_payment,
+            'a':            self.cmd_add_payment,
 
-    def run_loop(self):
-        print "Managing %s" % self.payment_type
-        print
+            'e':            self.cmd_edit_payment,
+            'edit':         self.cmd_edit_payment,
 
-        disable_display = False
-        while True:
-            if not disable_display:
-                print self.payments_list
+            'move':         self.cmd_move_payment,
+            'm':            self.cmd_move_payment,
 
-                print "---"
+            'delete':       self.cmd_delete_payment,
+            'd':            self.cmd_delete_payment,
 
-            cmd = self.input_type("string", "Do what? (add, edit, move, delete, clear, back)>")
-            if cmd:
-                cmd = cmd.lower()
+            'search':       self.cmd_search,
+            's':            self.cmd_search,
 
-            disable_display = False
+            'clear':        self.cmd_clear,
 
-            if cmd in ["add", "a"]:
-                self.prompt_add_payment()
-            elif cmd in ["edit", "e"]:
-                index = self.input_type("int", "Edit which one?>")
+            'back':         self.cmd_exit,
+            'b':            self.cmd_exit,
+            'exit':         self.cmd_exit,
+            'quit':         self.cmd_exit,
+            'q':            self.cmd_exit
+        }
 
-                if index is False:
-                    return False
+        self.show_payments = True
+        self.filter = ()
 
-                print
-
-                self.prompt_edit_payment(index)
-            elif cmd in ["move", "m"]:
-                index = self.input_type("int", "Move which one?>")
-
-                if index is False:
-                    return False
-
-                print
-
-                self.prompt_move_payment(index)
-            elif cmd in ["delete", "d"]:
-                index = self.input_type("int", "Delete which one?>")
-
-                if index is False:
-                    return False
-
-                print
-
-                self.prompt_delete_payment(index)
-            elif cmd in ["search", "s"]:
-                self.prompt_search()
-                disable_display = True
-
-            elif cmd in ["clear"]:
-                confirm = self.input_type("string", "Are you sure you want to clear the list? (y/N)>")
-                if confirm in ['y', 'yes']:
-                    self.payments_list.payments = []
-                    print "List cleared."
-
-            elif cmd in ['back', 'b', 'exit', 'quit', 'q']:
-                return True
-
-            print "---"
+    def pre_prompt(self):
+        if not self.filter:
+            print self.payments_list.display()
+        else:
+            print self.payments_list.display(self.filter[0], self.filter[1])
+            print "Searching {0} for \"{1}\".".format(self.filter[0], self.filter[1])
+            print "To show everything again, type \"search\" and leave everything blank."
             print
 
-    def prompt_add_payment(self):
+    def prompt_for_index(self):
+        return self.input_type("int", "Which one?>")
+
+    def cmd_add_payment(self):
         category  = self.input_type("string", "What kind of item is it?>")
         name      = self.input_type("string", "What's the name of it?>")
-        price     = self.input_type("float", "How much price did/will you spend?>")
+        price     = self.input_type("float", "How much money did/will you spend?>")
         day       = self.input_type("day", "On what day did/does the %s get billed?" % self.payment_type)
 
         if not category:
@@ -93,13 +72,18 @@ class PaymentsShell(BaseShell):
         self.payments_list.add(price, category, name, day)
         return True
 
-    def prompt_edit_payment(self, index):
+    def cmd_edit_payment(self):
+        index = self.prompt_for_index()
+        if not index:
+            return False
+
         if not self.payments_list.exists(index):
             print "That item did not exist!"
             return False
 
         unedited_payment = self.payments_list.get()[index]
 
+        # TODO: Write a method that turns a name like "payments" into "payment"
         category  = self.input_type("string", "What's kind of item is it? (leave empty to leave unchanged)>")
         name      = self.input_type("string", "What's the name of it? (leave empty to leave unchanged)>")
         price     = self.input_type("float", "How much money did/will you spend? (leave empty to leave unchanged)>")
@@ -117,16 +101,37 @@ class PaymentsShell(BaseShell):
         if self.payments_list.edit(index, price, category, name, day):
             print "Edited"
 
-    def prompt_move_payment(self, index):
+    def cmd_move_payment(self):
+        index = self.prompt_for_index()
+
         new_index = self.input_type("int", "Move it to which position? (leave empty to leave unchanged)>")
 
-        if not index:
+        if not new_index:
             return False
 
         self.payments_list.get().insert(new_index, self.payments_list.get().pop(index))
         print "Moved."
 
-    def prompt_delete_payment(self, index):
+    def cmd_search(self):
+        if self.filter:
+            print "(Leave both blank to reset the search and show everything again)"
+
+        key    = self.input_type("search", "Search within what? (day, category, name, price)>")
+        query  = self.input_type("string", "For what?>")
+
+        if not key and not query:
+            self.filter = ()
+
+        if not key:
+            return
+        if not query:
+            return
+
+        self.filter = (key, query)
+
+    def cmd_delete_payment(self):
+        index = self.prompt_for_index()
+
         if not self.payments_list.exists(index):
             print "That item did not exist!"
             return False
@@ -136,27 +141,22 @@ class PaymentsShell(BaseShell):
             if self.payments_list.delete(index):
                 print "Deleted."
 
-    def prompt_search(self):
-        key    = self.input_type("search", "Search within what? (day, category, name, price)>")
-        query  = self.input_type("string", "For what?>")
+    def cmd_clear(self):
+        confirm = self.input_type("string", "Are you sure you want to clear the list? (y/N)>")
+        if confirm in ['y', 'yes']:
+            self.payments_list.payments = []
+            print "List cleared."
 
-        if not key:
-            return
-        if not query:
-            return
-
-        print
-
-        print self.payments_list.display(key, query)
+    def cmd_exit(self):
+        self.filter = ()
+        self.stop_loop()
+        return
 
 class MainShell(GenericShell):
+    """The main shell"""
+
     main_shell = True
     prompt = "Manager>"
-    intro = """Financial Manager by Rose
-Type 'help' for help.
-
-Quick reminder: income, expenses, payments, +payments, total, budget, details, foresight, nextmonth, setleftovers, exit
-"""
     currency = "$"
 
     def __init__(self, data_manager):
@@ -192,14 +192,21 @@ Quick reminder: income, expenses, payments, +payments, total, budget, details, f
 
             'nextmonth':            self.cmd_next_month,
 
-            'help':                 self.help,
+            'help':                 self.cmd_help,
 
             'exit':                 self.cmd_exit,
             'quit':                 self.cmd_exit,
             'q':                    self.cmd_exit
         }
 
-    def help(self):
+    def intro(self):
+        print """Financial Manager by Rose
+Type 'help' for help.
+
+Quick reminder: income, expenses, payments, +payments, total, budget, details, foresight, nextmonth, setleftovers, exit
+    """
+
+    def cmd_help(self):
         print """
 Simply set your income, then add your monthly expenses/bills. You can do this every month, or only once if your expenses are the same every month.
 
@@ -251,18 +258,22 @@ exit:                   Quits the program
     def cmd_manage_expenses(self):
         self.shells['expenses'].run_loop()
         self.data_manager.save()
+        print "Your changes were saved."
 
     def cmd_manage_income(self):
         self.shells['income'].run_loop()
         self.data_manager.save()
+        print "Your changes were saved."
 
     def cmd_manage_payments(self):
         self.shells['payments'].run_loop()
         self.data_manager.save()
+        print "Your changes were saved."
 
     def cmd_manage_plus_payments(self):
         self.shells['+payments'].run_loop()
         self.data_manager.save()
+        print "Your changes were saved."
 
     def cmd_display_total(self):
         print "Income: %s%.2f" % (config.currency, self.data_manager.get_payments_total("income"))
@@ -313,4 +324,4 @@ exit:                   Quits the program
             print "Moved on to the next month."
 
     def cmd_exit(self):
-        sys.exit(0)
+        self.stop_loop()
